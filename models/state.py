@@ -1,35 +1,37 @@
 #!/usr/bin/python3
-"""Module for State class."""
+'''
+    Implementation of the State class
+'''
 
-from sqlalchemy.ext.declarative import declarative_base
 from models.base_model import BaseModel, Base
+from sqlalchemy import Column, String
 from sqlalchemy.orm import relationship
-from sqlalchemy import Column, Integer, String
 from models.city import City
-import shlex
+import os
 import models
 
-class State(BaseModel, Base):
-    """This is the class representing State
-    Attributes:
-        name: input name
-    """
-    __tablename__ = "states"
-    name = Column(String(128), nullable=False)
-    cities = relationship("City", cascade='all, delete, delete-orphan',
-                          backref="state")
 
-    @property
-    def cities(self):
-        var = models.storage.all()
-        lista = []
-        result = []
-        for key in var:
-            city = key.replace('.', ' ')
-            city = shlex.split(city)
-            if (city[0] == 'City'):
-                lista.append(var[key])
-        for elem in lista:
-            if (elem.state_id == self.id):
-                result.append(elem)
-        return (result)
+class State(BaseModel, Base):
+    '''
+        Implementation for the State.
+    '''
+    __tablename__ = 'states'
+    if os.getenv('HBNB_TYPE_STORAGE') == 'db':
+        name = Column(String(128), nullable=False)
+        cities = relationship("City", passive_deletes=True, backref="state")
+    else:
+        name = ""
+
+        @property
+        def cities(self):
+            """
+            cities property
+            """
+            city_list = []
+            for key, val in models.storage.all().items():
+                try:
+                    if val.state_id == self.id:
+                        city_list.append(val)
+                except AttributeError:
+                    pass
+            return city_list

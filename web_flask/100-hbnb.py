@@ -1,33 +1,74 @@
 #!/usr/bin/python3
-"""
-Starts a Flask web application. Listens on 0.0.0.0  on port 5000.
-Routes:*  /hbnb: Display the HTML page for hbnb home page.
-"""
 from flask import Flask
+from models import storage, State
 from flask import render_template
-from models import storage
-
 
 app = Flask(__name__)
 
 
-@app.route("/hbnb", strict_slashes=False)
-def hbnb():
-    """This Display the HTML page for hbnb home page."""
-    amenities = storage.all("Amenity")
-    places = storage.all("Place")
-    states = storage.all("State")
-    return render_template("100-hbnb.html",
-                           amenities=amenities,
-                           places=places,
-                           states=states)
-
-
 @app.teardown_appcontext
-def teardown(excpt=None):
-    """This Removes the current SQLAlchemy Session."""
+def teardown(exceptions):
     storage.close()
 
 
+@app.route("/states_list", strict_slashes=False)
+def states_list():
+    state_obj = storage.all("State")
+    states = list()
+    for state, value in state_obj.items():
+        states.append(value)
+    return render_template("7-states_list.html", states=states)
+
+
+@app.route("/cities_by_states", strict_slashes=False)
+def cities_by_states():
+    state_obj = storage.all("State")
+    city_obj = storage.all("City")
+    states = list()
+    cities = list()
+    for state, value in state_obj.items():
+        states.append(value)
+    for city, value in city_obj.items():
+        cities.append(value)
+    return render_template("8-cities_by_states.html",
+                           states=states,
+                           cities=cities)
+
+
+@app.route("/states", strict_slashes=False)
+@app.route("/states/<id>", strict_slashes=False)
+def show_states(id=None):
+    state_obj = storage.all("State")
+    city_obj = storage.all("City")
+    states = list()
+    cities = list()
+    for state, value in state_obj.items():
+        states.append(value)
+    for city, value in city_obj.items():
+        cities.append(value)
+
+    state_id = "State.{}".format(id)
+    if id is not None and state_id not in state_obj:
+        states = None
+    return render_template("9-states.html",
+                           states=states,
+                           cities=cities,
+                           id=id)
+
+
+@app.route("/hbnb", strict_slashes=False)
+def display_filters():
+    states = storage.all("State")
+    cities = storage.all("City")
+    amenities = storage.all("Amenity")
+    places = storage.all("Place")
+
+    return render_template("100-hbnb.html",
+                           states=states,
+                           cities=cities,
+                           amenities=amenities,
+                           places=places)
+
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0")
+    app.run(host="0.0.0.0", port=5000)
